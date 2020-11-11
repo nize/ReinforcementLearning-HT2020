@@ -9,18 +9,21 @@ import numpy
 import math
 import functools
 import operator
+import matplotlib.pyplot as plt
+from typing import List, Set
 
 class ValueIterationAgent:
-    def __init__(self,env: discrete.DiscreteEnv):
+    def __init__(self,env: discrete.DiscreteEnv, terminalStates: Set[int], envShape: tuple):
         self.env: discrete.DiscreteEnv = env
         self.env.reset()
-        # add check if it cliff env
-        self.fixCliffEnvironment()
         # Intialize state value function
         self.V  = numpy.zeros(self.env.nS)
         # Configure parameters (todo: pass as optional args)
-        self.theta: float = 0.5
+        self.theta: float = 0.001
         self.gamma: float = 0.99
+        self.deltaHistory = []
+        self.terminalStates = terminalStates
+        self.envShape = envShape
 
     def estimateOptimalPolicy(self):
         """
@@ -32,21 +35,32 @@ class ValueIterationAgent:
         #for s in range(env.nS):
         #    V[s] = random.random()*2 - 1
 
+        for terminalState in self.terminalStates:
+            self.V[terminalState] = 0
         # Estimate state value function
         while delta > self.theta:
             delta = 0
             for s in range(self.env.nS):
+                if s in self.terminalStates:
+                    continue
                 # Estimate V[s]
                 v = self.V[s]
                 # Find action giving the greatest value
                 self.V[s] = max([self.estimateStateActionValue(s,a) for a in range(self.env.nA)])
                 delta = max(delta,abs(v-self.V[s]))
+            self.deltaHistory.append(delta)
 
         # Compute optimal policy based on value estimation
-        self.pi = numpy.zeros(self.env.nS)
+        self.pi = numpy.zeros(self.env.nS,dtype=int)
         for s in range(self.env.nS):
             amax = numpy.argmax([self.estimateStateActionValue(s,a) for a in range(self.env.nA)])
-            self.pi[s] = amax
+            self.pi[s] = int(amax)
+
+        plt.plot(self.deltaHistory)
+        plt.xlabel('Sweep count')
+        plt.ylabel('Delta')
+        plt.savefig('value_iteration')
+        
 
 
     def estimateStateActionValue(self,s: int,a: int) -> float:
@@ -61,6 +75,11 @@ class ValueIterationAgent:
         v = p*(r + self.gamma*self.V[sprime])
         return v
 
+    def renderPolicy(self):
+        print(self.pi.reshape(self.envShape))
+    
+    def renderStateValue(self):
+        print(numpy.round(self.V.reshape(self.envShape))) #print(self.V.reshape(self.env.shape))
 
     def renderAppliedPolicy(self) -> float:
         self.env.reset()
@@ -71,13 +90,3 @@ class ValueIterationAgent:
             [s,r,inTerminal,p] = self.env.step(self.pi[self.env.s])
             totr=totr+r
         return totr
-
-    def fixCliffEnvironment(self):
-        # The environment is not correctly modelled
-        # The model doesn't show that no more reward will be returned after reaching the end goal
-        terminal_state = 47
-        terminal_state_P = [(1.0, 47, 0, True)],[(1.0, 47, 0, True)],[(1.0, 47, 0, True)],[(1.0, 47, 0, True)]
-        #self.env.P = {}
-        for s in range(self.env.nS):
-            if s == terminal_state:
-                self.env.P[s] = terminal_state_P

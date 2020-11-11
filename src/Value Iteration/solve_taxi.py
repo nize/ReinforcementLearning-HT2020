@@ -1,19 +1,22 @@
 # Import libs
 from gym import envs
-from gym.envs.toy_text import discrete
+from gym.envs.toy_text import discrete, TaxiEnv
 import numpy
 import math
-import agent_taxi as viagent
+import agent as viagent
 
 # Load and reset environment
-env: discrete.DiscreteEnv = envs.make('Taxi-v3')
+env: TaxiEnv = envs.make('Taxi-v3')
 env.reset()
 
 # Create agent
-agent = viagent.ValueIterationAgent(env)
+agent = viagent.ValueIterationAgent(env,{},(5,5))
+# Note: It would be possible to find all terminal states, but a bit cumbersome and the result is ok anyway.
+# Note 2: The shape is not correct (doesnt for rendering), but this will have to be part of the backlog.
 
 # Find optimal policy
 agent.estimateOptimalPolicy()
 
 # Render walking by the policy
 agent.renderAppliedPolicy()
+

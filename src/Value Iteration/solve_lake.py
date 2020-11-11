@@ -10,7 +10,7 @@ env: discrete.DiscreteEnv = envs.make('FrozenLake-v0')
 env.reset()
 
 # Create agent
-agent = viagent.ValueIterationAgent(env)
+agent = viagent.ValueIterationAgent(env,{15},(4,4))
 
 # Find optimal policy
 agent.estimateOptimalPolicy()
